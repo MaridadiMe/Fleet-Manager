@@ -53,7 +53,7 @@ export class CreateVehicleDto {
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
-  assignedDriver: string;
+  driverId: string;
 
   @ApiPropertyOptional()
   @IsString()

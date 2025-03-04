@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { BaseController } from 'src/common/controllers/base.controller';
 import { VehicleService } from '../services/vehicle.service';
 import { Vehicle } from '../entities/vehicle.entity';
@@ -26,13 +35,25 @@ export class VehicleController extends BaseController<Vehicle> {
   }
 
   @Post()
-  @HttpCode(200)
+  @HttpCode(201)
   @Permissions('CREATE_VEHICLES')
   async create(
     @Body() dto: CreateVehicleDto,
     @AuthenticatedUser() user: User,
   ): Promise<BaseResponseDto<Vehicle>> {
     const vehicle = await this.service.createVehicle(dto, user);
+    return new BaseResponseDto(vehicle);
+  }
+
+  @Post(':id')
+  @HttpCode(200)
+  @Permissions('CREATE_VEHICLES')
+  async assignDriver(
+    @Param('id') id: string,
+    @Query('driverId') driverId: string,
+    @AuthenticatedUser() user: User,
+  ): Promise<BaseResponseDto<Vehicle>> {
+    const vehicle = await this.service.assignDriver(id, driverId, user);
     return new BaseResponseDto(vehicle);
   }
 }

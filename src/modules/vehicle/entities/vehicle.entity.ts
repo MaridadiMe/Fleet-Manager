@@ -1,8 +1,9 @@
 import { BaseEntity } from 'src/common/entities/base.entity';
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 import { VehicleType } from '../enums/vehicle-type.enum';
 import { VehicleStatus } from '../enums/vehicle-status.enum';
 import { CapacityUnit } from '../enums/capacity-unit.enum';
+import { Driver } from 'src/modules/driver/entities/driver.entity';
 
 @Entity({ name: 'VEHICLE' })
 export class Vehicle extends BaseEntity {
@@ -24,8 +25,12 @@ export class Vehicle extends BaseEntity {
   @Column({ nullable: true })
   location: string;
 
-  @Column({ nullable: true })
-  assignedDriver: string;
+  @OneToOne(() => Driver, (driver) => driver.assignedVehicle)
+  @JoinColumn()
+  driver: Driver;
+
+  // @Column({ nullable: true })
+  // driverId: string;
 
   @Column()
   capacity: number;
