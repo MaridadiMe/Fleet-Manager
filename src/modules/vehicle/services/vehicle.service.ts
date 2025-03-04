@@ -11,6 +11,8 @@ import { VehicleRepository } from '../repositories/vehicle.repository';
 import { CreateVehicleDto } from '../dtos/create-vehicle.dto';
 import { User } from 'src/modules/auth/types/user.type';
 import { DriverRepository } from 'src/modules/driver/repositories/driver.repository';
+import { DataSource } from 'typeorm';
+import { Driver } from 'src/modules/driver/entities/driver.entity';
 
 @Injectable()
 export class VehicleService extends BaseService<Vehicle> {
@@ -18,6 +20,7 @@ export class VehicleService extends BaseService<Vehicle> {
   constructor(
     protected readonly vehicleRepository: VehicleRepository,
     private readonly driverRepository: DriverRepository,
+    private readonly dataSource: DataSource,
   ) {
     super(vehicleRepository);
   }
@@ -60,23 +63,38 @@ export class VehicleService extends BaseService<Vehicle> {
     driverId: string,
     user: User,
   ): Promise<Vehicle> {
-    try {
-      const vehicle = await this.vehicleRepository.findOneBy({ id });
-      if (!vehicle) {
-        throw new NotFoundException('Vehicle Does Not Exist');
-      }
+    return await this.dataSource.transaction(async (manager) => {
+      try {
+        const vehicle = await manager.findOneBy(Vehicle, { id });
+        if (!vehicle) {
+          throw new NotFoundException('Vehicle Does Not Exist');
+        }
 
-      const driver = await this.driverRepository.findOneBy({ id: driverId });
-      if (!driver) {
-        throw new NotFoundException('Vehicle Does Not Exist');
-      }
+        const driver = await manager.findOne(Driver, {
+          where: { id: driverId },
+          relations: ['assignedVehicle'],
+        });
 
-      // vehicle.driver = driver.id;
-      return await this.vehicleRepository.save(vehicle);
-      // return;
-    } catch (error) {
-      this.logger.error(`Error While Assigning Driver: ${error}`);
-      throw error;
-    }
+        if (!driver) {
+          throw new NotFoundException('Driver Does Not Exist');
+        }
+        if (driver.assignedVehicle) {
+          const previousAssigned = driver.assignedVehicle;
+          previousAssigned.driver = null;
+          previousAssigned.updatedBy = user.userName;
+          await manager.save(previousAssigned);
+          delete driver.assignedVehicle;
+        }
+
+        vehicle.driver = driver;
+        vehicle.updatedBy = user.userName;
+        await manager.save(vehicle);
+
+        return vehicle;
+      } catch (error) {
+        this.logger.error(`Error While Assigning Driver: ${error}`);
+        throw error;
+      }
+    });
   }
 }

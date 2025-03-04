@@ -24,7 +24,6 @@ export class DriverController extends BaseController<Driver> {
   async ViewDriver(
     @AuthenticatedUser() user: User,
   ): Promise<BaseResponseDto<Driver>> {
-    this.logger.log(user);
     const driver = await this.service.findAll();
     return new BaseResponseDto(driver);
   }
@@ -35,7 +34,6 @@ export class DriverController extends BaseController<Driver> {
     @Body() dto: CreateDriverDto,
     @AuthenticatedUser() user: User,
   ): Promise<BaseResponseDto<Driver>> {
-    this.logger.log(user);
     const driver = await this.service.createDriver(dto, user);
     return new BaseResponseDto(driver);
   }

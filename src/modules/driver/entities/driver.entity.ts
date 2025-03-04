@@ -14,6 +14,15 @@ export class Driver extends BaseEntity {
   @Column({ nullable: false, unique: true })
   nationalIdNumber: string;
 
+  @Column({ nullable: false })
+  driverName: string;
+
+  @Column({ nullable: false })
+  phone: string;
+
+  @Column({ nullable: false })
+  email: string;
+
   @OneToOne(() => Vehicle, (vehicle) => vehicle.driver)
   assignedVehicle: Vehicle;
 }

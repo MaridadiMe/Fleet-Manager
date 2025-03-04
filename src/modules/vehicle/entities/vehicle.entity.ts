@@ -29,9 +29,6 @@ export class Vehicle extends BaseEntity {
   @JoinColumn()
   driver: Driver;
 
-  // @Column({ nullable: true })
-  // driverId: string;
-
   @Column()
   capacity: number;
 

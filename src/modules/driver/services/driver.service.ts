@@ -23,11 +23,17 @@ export class DriverService extends BaseService<Driver> {
     await this.validateProperty('nationalIdNumber', dto.nationalIdNumber);
     await this.validateProperty('userId', dto.userId);
 
-    if (!this.isUserValid(dto.userId)) {
-      throw new NotFoundException(`No Matching User Was Found`);
-    }
+    const driverUserData: User = await this.repository.getUser(dto.userId);
 
-    const driver = this.repository.create({ ...dto, createdBy: user.userName });
+    const driver = this.repository.create({
+      ...dto,
+      driverName:
+        `${driverUserData.firstName} ${driverUserData.lastName}`.toUpperCase(),
+      email: driverUserData.email,
+      phone: driverUserData.phone,
+      createdBy: user.userName,
+      updatedBy: user.userName,
+    });
 
     try {
       return await this.repository.save(driver);
