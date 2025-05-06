@@ -34,6 +34,14 @@ export class VehicleController extends BaseController<Vehicle> {
     return new BaseResponseDto(vehicles);
   }
 
+  @Get(':id')
+  @HttpCode(200)
+  @Permissions('VIEW_VEHICLES')
+  async findOne(@Param('id') id: string): Promise<BaseResponseDto<Vehicle>> {
+    const vehicle = await this.service.findOne(id);
+    return new BaseResponseDto(vehicle);
+  }
+
   @Post()
   @HttpCode(201)
   @Permissions('CREATE_VEHICLES')
@@ -45,7 +53,7 @@ export class VehicleController extends BaseController<Vehicle> {
     return new BaseResponseDto(vehicle);
   }
 
-  @Post(':id')
+  @Patch(':id/assign-driver')
   @HttpCode(200)
   @Permissions('CREATE_VEHICLES')
   async assignDriver(
@@ -54,6 +62,29 @@ export class VehicleController extends BaseController<Vehicle> {
     @AuthenticatedUser() user: User,
   ): Promise<BaseResponseDto<Vehicle>> {
     const vehicle = await this.service.assignDriver(id, driverId, user);
+    return new BaseResponseDto(vehicle);
+  }
+
+  @Patch(':id/unassign-driver')
+  @HttpCode(200)
+  @Permissions('CREATE_VEHICLES')
+  async unAssignDriver(
+    @Param('id') id: string,
+    @AuthenticatedUser() user: User,
+  ): Promise<BaseResponseDto<Vehicle>> {
+    const vehicle = await this.service.unAssignDriver(id, user);
+    return new BaseResponseDto(vehicle);
+  }
+
+  @Patch(':id/assign-owner')
+  @HttpCode(200)
+  @Permissions('CREATE_VEHICLES')
+  async assignOwner(
+    @Param('id') id: string,
+    @Query('ownerId') ownerId: string,
+    @AuthenticatedUser() user: User,
+  ): Promise<BaseResponseDto<Vehicle>> {
+    const vehicle = await this.service.assignOwner(id, ownerId, user);
     return new BaseResponseDto(vehicle);
   }
 }

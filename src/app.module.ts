@@ -8,6 +8,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth-guard';
 import { PermissionsGuard } from './modules/auth/guards/permissions.guard';
 import { VehicleModule } from './modules/vehicle/vehicle.module';
 import { DriverModule } from './modules/driver/driver.module';
+import { OwnerModule } from './modules/owner/owner.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { DriverModule } from './modules/driver/driver.module';
     AuthModule,
     VehicleModule,
     DriverModule,
+    OwnerModule,
   ],
   providers: [
     {
