@@ -37,11 +37,14 @@ export class VehicleService extends BaseService<Vehicle> {
         where: { registrationNumber: dto.registrationNumber },
       });
     } catch (error) {
-      this.logger.error('error');
+      this.logger.error(`Error Checking Vehicle Existence: ${error.message}`);
       throw new InternalServerErrorException(`Error Registering The Vehicle`);
     }
 
     if (vehicleExists) {
+      this.logger.log(
+        `Vehicle With Reg Number: ${dto.registrationNumber} Already Exists`,
+      );
       throw new BadRequestException(
         `Vehicle With Reg Number: ${dto.registrationNumber} Already Exists`,
       );
@@ -54,7 +57,8 @@ export class VehicleService extends BaseService<Vehicle> {
       });
       return this.vehicleRepository.save(vehicle);
     } catch (error) {
-      this.logger.error('error');
+      this.logger.error(`'error' While Creating Vehicle: ${error.message}`);
+      this.logger.error(error.stack);
       throw new InternalServerErrorException(`Error Registering The Vehicle`);
     }
   }
