@@ -1,0 +1,14 @@
+# Never send these to the Docker daemon
+dist/
+node_modules/
+keys/
+.git
+.gitignore
+.env
+.env.*
+*.log
+npm-debug.log*
+.DS_Store
+coverage/
+tmp/
+temp/
