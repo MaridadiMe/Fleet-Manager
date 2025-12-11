@@ -1,5 +1,5 @@
 services:
-  rosemlabs-wis:
+  rosemlabs-fms:
     image: cross7heroad/rosemlabs:fms-1.0.0
     container_name: rosemlabs-fms
     restart: unless-stopped

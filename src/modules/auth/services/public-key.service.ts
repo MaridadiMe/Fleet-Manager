@@ -4,6 +4,7 @@ import {
   OnModuleInit,
   RequestMethod,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { RestclientService } from 'src/modules/restclient/restclient.service';
 
 @Injectable()
@@ -13,7 +14,10 @@ export class PublicKeyService {
   private readonly redisClient: any;
   private readonly logger = new Logger(PublicKeyService.name);
 
-  constructor(private readonly restClient: RestclientService) {}
+  constructor(
+    private readonly restClient: RestclientService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async getPublicKey(): Promise<string> {
     if (!this.publicKey) {
@@ -24,9 +28,10 @@ export class PublicKeyService {
 
   async getPublicKeyFromIamServer(): Promise<string> {
     try {
-      //   const iamBaseUrl = 'http://localhost:4000';
+      const iamBaseUrl = this.configService.get('IAM_BASE_URL');
+      const pKeyEndpoint = this.configService.get('PKEY_ENDPOINT');
       return (await this.restClient.request({
-        url: 'http://localhost:4000/api/v1/iam/auth/public-key',
+        url: `${iamBaseUrl}/${pKeyEndpoint}`,
         method: RequestMethod.GET,
       })) as string;
     } catch (error) {
