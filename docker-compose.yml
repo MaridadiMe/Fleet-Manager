@@ -1,0 +1,22 @@
+services:
+  rosemlabs-wis:
+    image: cross7heroad/rosemlabs:fms-1.0.0
+    container_name: rosemlabs-fms
+    restart: unless-stopped
+    pull_policy: never
+    env_file: .env
+    networks:
+      - rosemlabs_proxy
+    labels:
+      - 'traefik.enable=true'
+
+      # HTTPS router
+      - 'traefik.http.routers.rosemlabs-fms.entrypoints=websecure'
+      - 'traefik.http.routers.rosemlabs-fms.rule=Host(`api.rosemlabs.com`) && PathPrefix(`/api/v1/fms`)'
+      - 'traefik.http.routers.rosemlabs-fms.tls=true'
+      - 'traefik.http.routers.rosemlabs-fms.tls.certresolver=le'
+
+networks:
+  rosemlabs_proxy:
+    external: true
+    name: rosemlabs_proxy
