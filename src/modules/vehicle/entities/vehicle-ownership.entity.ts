@@ -4,7 +4,7 @@ import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { Vehicle } from './vehicle.entity';
 import { Owner } from 'src/modules/owner/entities/owner.entity';
 
-@Entity({ name: 'VEHICLE_OWNERSHIP' })
+@Entity({ name: 'VEHICLE_OWNERSHIPS' })
 export class VehicleOwnership extends BaseEntity {
   @ManyToOne(() => Owner)
   @JoinColumn()

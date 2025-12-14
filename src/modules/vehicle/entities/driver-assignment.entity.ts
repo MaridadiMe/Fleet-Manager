@@ -3,7 +3,7 @@ import { Driver } from 'src/modules/driver/entities/driver.entity';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { Vehicle } from './vehicle.entity';
 
-@Entity({ name: 'DRIVER_ASSIGNMENT' })
+@Entity({ name: 'DRIVER_ASSIGNMENTS' })
 export class DriverAssignment extends BaseEntity {
   @ManyToOne(() => Driver)
   @JoinColumn()

@@ -1,8 +1,9 @@
 import { BaseEntity } from 'src/common/entities/base.entity';
-import { Column, Entity, OneToOne } from 'typeorm';
+import { Column, Entity, OneToMany, OneToOne } from 'typeorm';
 import { Vehicle } from 'src/modules/vehicle/entities/vehicle.entity';
+import { Trip } from 'src/modules/trip/entities/trip.entity';
 
-@Entity({ name: 'DRIVER' })
+@Entity({ name: 'DRIVERS' })
 export class Driver extends BaseEntity {
   @Column({ nullable: true, unique: true })
   userId: string;
@@ -24,4 +25,7 @@ export class Driver extends BaseEntity {
 
   @OneToOne(() => Vehicle, (vehicle) => vehicle.driver)
   assignedVehicle: Vehicle;
+
+  @OneToMany(() => Trip, (trip) => trip.driver)
+  trips: Trip[];
 }

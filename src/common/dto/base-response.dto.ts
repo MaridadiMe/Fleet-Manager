@@ -5,7 +5,6 @@ export class BaseResponseDto<T> {
   data: T;
 
   constructor(data: any, status: number = HttpStatus.OK) {
-    this.status = status;
     this.data = data;
   }
 }

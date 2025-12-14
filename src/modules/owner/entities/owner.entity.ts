@@ -2,7 +2,7 @@ import { BaseEntity } from 'src/common/entities/base.entity';
 import { Vehicle } from 'src/modules/vehicle/entities/vehicle.entity';
 import { Column, Entity, OneToMany } from 'typeorm';
 
-@Entity({ name: 'OWNER' })
+@Entity({ name: 'OWNERS' })
 export class Owner extends BaseEntity {
   @Column({ nullable: true, unique: true })
   userId: string;

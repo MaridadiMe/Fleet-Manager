@@ -9,6 +9,7 @@ import { PermissionsGuard } from './modules/auth/guards/permissions.guard';
 import { VehicleModule } from './modules/vehicle/vehicle.module';
 import { DriverModule } from './modules/driver/driver.module';
 import { OwnerModule } from './modules/owner/owner.module';
+import { TripModule } from './modules/trip/trip.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { OwnerModule } from './modules/owner/owner.module';
     VehicleModule,
     DriverModule,
     OwnerModule,
+    TripModule,
   ],
   providers: [
     {

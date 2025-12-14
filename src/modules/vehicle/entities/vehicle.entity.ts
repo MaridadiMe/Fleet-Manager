@@ -6,7 +6,7 @@ import { CapacityUnit } from '../enums/capacity-unit.enum';
 import { Driver } from 'src/modules/driver/entities/driver.entity';
 import { Owner } from 'src/modules/owner/entities/owner.entity';
 
-@Entity({ name: 'VEHICLE' })
+@Entity({ name: 'VEHICLES' })
 export class Vehicle extends BaseEntity {
   @Column({ unique: true })
   registrationNumber: string;
