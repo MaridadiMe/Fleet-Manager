@@ -68,4 +68,8 @@ export class DriverService extends BaseService<Driver> {
     //TODO: Call IAM to validate user
     return true;
   }
+
+  async findAllDrivers(): Promise<Driver[]> {
+    return this.findAll();
+  }
 }

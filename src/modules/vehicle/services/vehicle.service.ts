@@ -63,6 +63,10 @@ export class VehicleService extends BaseService<Vehicle> {
     }
   }
 
+  async findAllVehicles(): Promise<Vehicle[]> {
+    return this.findAll();
+  }
+
   async findOne(id: string): Promise<Vehicle> {
     try {
       const vehicle = await this.vehicleRepository.findOne({

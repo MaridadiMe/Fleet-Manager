@@ -30,7 +30,7 @@ export class VehicleController extends BaseController<Vehicle> {
   @HttpCode(200)
   @Permissions('VIEW_VEHICLES')
   async findAll(): Promise<BaseResponseDto<Vehicle[]>> {
-    const vehicles = await this.service.findAll();
+    const vehicles = await this.service.findAllVehicles();
     return new BaseResponseDto(vehicles);
   }
 

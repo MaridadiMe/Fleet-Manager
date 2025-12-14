@@ -7,6 +7,7 @@ import { User } from 'src/modules/auth/types/user.type';
 import { Between, Equal, Or } from 'typeorm';
 import { TRIP_STATUS } from '../enums/trip-status.enum';
 import { SearchTripsDto } from '../dtos/search-trip.dto';
+import { ListTripsDto } from '../dtos/list-trip.dto';
 
 @Injectable()
 export class TripService extends BaseService<Trip> {
@@ -45,6 +46,20 @@ export class TripService extends BaseService<Trip> {
       this.logger.error(`Error Scheduling Trip`, error.message);
       throw error;
     }
+  }
+
+  async listTrips(dto: ListTripsDto, user: User) {
+    return this.findPaged(
+      {
+        status: dto.status,
+        driverId: dto.driverId,
+      },
+      dto.page,
+      dto.limit,
+      {
+        order: { departureAt: 'ASC' },
+      },
+    );
   }
 
   async searchTrips(dto: SearchTripsDto, user: User): Promise<Trip[]> {

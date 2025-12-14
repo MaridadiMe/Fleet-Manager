@@ -15,6 +15,8 @@ import { AuthenticatedUser } from 'src/modules/auth/decorators/authenticated-use
 import { User } from 'src/modules/auth/types/user.type';
 import { BaseResponseDto } from 'src/common/dto/base-response.dto';
 import { SearchTripsDto } from '../dtos/search-trip.dto';
+import { ListTripsDto } from '../dtos/list-trip.dto';
+import { BasePaginatedResponseDto } from 'src/common/dto/base-paginated-response.dto';
 
 @Controller('trips')
 @ApiTags('Trips')
@@ -35,9 +37,12 @@ export class TripController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @Permissions('VIEW_TRIPS')
-  async getAllTrips(@AuthenticatedUser() user: User) {
-    const trips = await this.service.findAll();
-    return new BaseResponseDto(trips);
+  async getAllTrips(
+    @Query() dto: ListTripsDto,
+    @AuthenticatedUser() user: User,
+  ) {
+    const result = await this.service.listTrips(dto, user);
+    return new BasePaginatedResponseDto(result.items, result.meta);
   }
 
   @Get('search')

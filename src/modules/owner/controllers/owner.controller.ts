@@ -33,7 +33,7 @@ export class OwnerController extends BaseController<Owner> {
   async viewOwners(
     @AuthenticatedUser() user: User,
   ): Promise<BaseResponseDto<Owner>> {
-    const owners = await this.service.findAll();
+    const owners = await this.service.findAllOwners();
     return new BaseResponseDto(owners);
   }
 

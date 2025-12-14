@@ -55,4 +55,8 @@ export class OwnerService extends BaseService<Owner> {
       throw new InternalServerErrorException('Error Finding Owner');
     }
   }
+
+  async findAllOwners(): Promise<Owner[]> {
+    return this.findAll();
+  }
 }
