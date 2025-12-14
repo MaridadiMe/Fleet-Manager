@@ -1,5 +1,12 @@
 import { BaseEntity } from 'src/common/entities/base.entity';
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { TRIP_STATUS } from '../enums/trip-status.enum';
 import { Driver } from 'src/modules/driver/entities/driver.entity';
 import { Booking } from './booking.entity';
@@ -10,6 +17,7 @@ export class Trip extends BaseEntity {
   @JoinColumn({ name: 'driverId' })
   driver: Driver;
 
+  @Index('DRIVER_ID')
   @Column()
   driverId: string;
 
@@ -31,6 +39,7 @@ export class Trip extends BaseEntity {
   @Column({ nullable: true })
   endAddress?: string;
 
+  @Index('DEPARTURE_AT')
   @Column({ type: 'datetime' })
   departureAt: Date;
 
@@ -43,6 +52,7 @@ export class Trip extends BaseEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   price: number;
 
+  @Index('TRIP_STATUS')
   @Column({
     type: 'enum',
     enum: TRIP_STATUS,
