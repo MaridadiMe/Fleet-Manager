@@ -62,7 +62,10 @@ export class TripService extends BaseService<Trip> {
     );
   }
 
-  async searchTrips(dto: SearchTripsDto, user: User): Promise<Trip[]> {
+  async searchTrips(
+    dto: SearchTripsDto,
+    user: User,
+  ): Promise<TripSearchResultDto[]> {
     const {
       pickupLat,
       pickupLon,
@@ -95,7 +98,7 @@ export class TripService extends BaseService<Trip> {
       dropLon,
     );
 
-    return matchingTrips;
+    return matchingTrips.map((trip) => this.tripToDto(trip));
   }
 
   private async getTrips(
@@ -107,6 +110,8 @@ export class TripService extends BaseService<Trip> {
   ) {
     return await this.repository
       .createQueryBuilder('trip')
+      .leftJoinAndSelect('trip.driver', 'driver')
+      .leftJoinAndSelect('driver.assignedVehicle', 'vehicle')
       .where('trip.status = :status', { status: TRIP_STATUS.SCHEDULED })
       .andWhere('trip.seatsAvailable > 0')
       .andWhere('trip.departureAt BETWEEN :from AND :to', {
@@ -205,5 +210,39 @@ export class TripService extends BaseService<Trip> {
     const safeCos = Math.min(Math.max(cosTheta, -1), 1);
 
     return Math.acos(safeCos) * (180 / Math.PI);
+  }
+
+  private tripToDto(trip: Trip): TripSearchResultDto {
+    const driver = trip.driver;
+    const vehicle = driver?.assignedVehicle;
+
+    return {
+      id: trip.id,
+      startLat: trip.startLat,
+      startLon: trip.startLon,
+      startAddress: trip.startAddress,
+      endLat: trip.endLat,
+      endLon: trip.endLon,
+      endAddress: trip.endAddress,
+      departureAt: trip.departureAt,
+      seatsTotal: trip.seatsTotal,
+      seatsAvailable: trip.seatsAvailable,
+      price: Number(trip.price),
+
+      driver: driver
+        ? {
+            id: driver.id,
+            driverName: driver.driverName,
+          }
+        : null,
+
+      vehicle: vehicle
+        ? {
+            id: vehicle.id,
+            registrationNumber: vehicle.registrationNumber,
+            type: vehicle.type,
+          }
+        : null,
+    };
   }
 }
