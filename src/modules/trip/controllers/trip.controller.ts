@@ -45,6 +45,14 @@ export class TripController {
     return new BasePaginatedResponseDto(result.items, result.meta);
   }
 
+  @Get('mine')
+  @HttpCode(HttpStatus.OK)
+  @Permissions()
+  async getUserTrips(@AuthenticatedUser() user: User) {
+    const result = await this.service.getUserTrips(user);
+    return new BasePaginatedResponseDto(result.items, result.meta);
+  }
+
   @Get('search')
   @HttpCode(HttpStatus.OK)
   @Permissions()

@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { BaseService } from 'src/common/services/base.service';
 import { Trip } from '../entities/trip.entity';
 import { TripRepository } from '../repositories/trip.repository';
@@ -8,6 +13,8 @@ import { Between, Equal, Or } from 'typeorm';
 import { TRIP_STATUS } from '../enums/trip-status.enum';
 import { SearchTripsDto } from '../dtos/search-trip.dto';
 import { ListTripsDto } from '../dtos/list-trip.dto';
+import { TripSearchResultDto } from '../dtos/trip-search-result.dto';
+import { Page } from 'src/common/pagination/page.interface';
 
 @Injectable()
 export class TripService extends BaseService<Trip> {
@@ -45,6 +52,27 @@ export class TripService extends BaseService<Trip> {
     } catch (error) {
       this.logger.error(`Error Scheduling Trip`, error.message);
       throw error;
+    }
+  }
+
+  async getUserTrips(user: User) {
+    try {
+      const where = {
+        bookings: {
+          createdBy: user.userName,
+        },
+      };
+      const results = await this.findPaged(where, 1, 10, {
+        relations: ['bookings', 'driver', 'driver.assignedVehicle'],
+      });
+      const paginatedUserTrips: Page<TripSearchResultDto> = {
+        items: results.items.map((trip) => this.tripToDto(trip)),
+        meta: results.meta,
+      };
+      return paginatedUserTrips;
+    } catch (error) {
+      this.logger.error('Error Getting Trips', error.message);
+      throw new InternalServerErrorException('Error Getting User Trips');
     }
   }
 
@@ -215,6 +243,7 @@ export class TripService extends BaseService<Trip> {
   private tripToDto(trip: Trip): TripSearchResultDto {
     const driver = trip.driver;
     const vehicle = driver?.assignedVehicle;
+    const bookings = trip?.bookings || [];
 
     return {
       id: trip.id,
@@ -243,6 +272,14 @@ export class TripService extends BaseService<Trip> {
             type: vehicle.type,
           }
         : null,
+      bookings: bookings.map((bk) => {
+        return {
+          id: bk.id,
+          status: bk.status,
+          seats: bk.seats,
+          bookedAt: bk.createdAt,
+        };
+      }),
     };
   }
 }
