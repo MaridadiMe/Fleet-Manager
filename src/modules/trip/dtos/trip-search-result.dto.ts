@@ -12,6 +12,7 @@ export interface TripSearchResultDto {
   seatsTotal: number;
   seatsAvailable: number;
   price: number;
+  status: string;
   driver: {
     id: string;
     driverName: string;

@@ -257,6 +257,7 @@ export class TripService extends BaseService<Trip> {
       seatsTotal: trip.seatsTotal,
       seatsAvailable: trip.seatsAvailable,
       price: Number(trip.price),
+      status: trip.status,
 
       driver: driver
         ? {
