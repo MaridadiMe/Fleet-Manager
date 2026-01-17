@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Query,
 } from '@nestjs/common';
@@ -17,6 +19,7 @@ import { BaseResponseDto } from 'src/common/dto/base-response.dto';
 import { SearchTripsDto } from '../dtos/search-trip.dto';
 import { ListTripsDto } from '../dtos/list-trip.dto';
 import { BasePaginatedResponseDto } from 'src/common/dto/base-paginated-response.dto';
+import { BookTripDto } from '../dtos/book-trip.dto';
 
 @Controller('trips')
 @ApiTags('Trips')
@@ -62,5 +65,26 @@ export class TripController {
   ) {
     const trips = await this.service.searchTrips(dto, user);
     return new BaseResponseDto(trips);
+  }
+
+  @Post(':tripId/bookings')
+  @Permissions()
+  async bookTrip(
+    @AuthenticatedUser() user: User,
+    @Body() payload: BookTripDto,
+  ) {
+    const booking = await this.service.bookTrip(user, payload);
+    return new BaseResponseDto(booking);
+  }
+
+  @Delete(':tripId/bookings/:bookingId')
+  @Permissions()
+  async cancelTrip(
+    @AuthenticatedUser() user: User,
+    @Param('tripId') tripId: string,
+    @Param('bookingId') bookingId: string,
+  ) {
+    const booking = await this.service.cancelTrip(user, tripId, bookingId);
+    return new BaseResponseDto(booking);
   }
 }

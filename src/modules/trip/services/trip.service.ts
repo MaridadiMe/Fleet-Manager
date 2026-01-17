@@ -1,25 +1,34 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { BaseService } from 'src/common/services/base.service';
 import { Trip } from '../entities/trip.entity';
 import { TripRepository } from '../repositories/trip.repository';
 import { CreateTripDto } from '../dtos/create-trip.dto';
 import { User } from 'src/modules/auth/types/user.type';
-import { Between, Equal, Or } from 'typeorm';
+import { Between, DataSource, Equal, Or } from 'typeorm';
 import { TRIP_STATUS } from '../enums/trip-status.enum';
 import { SearchTripsDto } from '../dtos/search-trip.dto';
 import { ListTripsDto } from '../dtos/list-trip.dto';
 import { TripSearchResultDto } from '../dtos/trip-search-result.dto';
 import { Page } from 'src/common/pagination/page.interface';
+import { BOOKING_STATUS } from '../enums/booking-status.enum';
+import { Booking } from '../entities/booking.entity';
+import { BookTripDto } from '../dtos/book-trip.dto';
+import { DefaultConstants } from 'src/common/constants/default.constants';
 
 @Injectable()
 export class TripService extends BaseService<Trip> {
   private readonly logger = new Logger(TripService.name);
-  constructor(protected readonly repository: TripRepository) {
+  constructor(
+    protected readonly repository: TripRepository,
+    private readonly dataSource: DataSource,
+  ) {
     super(repository);
   }
 
@@ -282,5 +291,132 @@ export class TripService extends BaseService<Trip> {
         };
       }),
     };
+  }
+
+  async bookTrip(user: any, dto: BookTripDto): Promise<Booking> {
+    return this.dataSource.transaction(async (manager) => {
+      const tripRepo = manager.getRepository(Trip);
+      const bookingRepo = manager.getRepository(Booking);
+
+      // 🔒 Lock row to prevent concurrent bookings
+      const trip = await tripRepo.findOne({
+        where: { id: dto.tripId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!trip) {
+        throw new NotFoundException('Trip not found');
+      }
+
+      if (trip.status !== TRIP_STATUS.SCHEDULED) {
+        throw new BadRequestException(
+          'Cannot book a trip that is not scheduled',
+        );
+      }
+
+      if (trip.seatsAvailable < dto.seats) {
+        throw new BadRequestException(
+          `Only ${trip.seatsAvailable} seats available`,
+        );
+      }
+
+      const existingBooking = await bookingRepo.findOne({
+        where: {
+          tripId: dto.tripId,
+          riderId: user.id,
+          status: Or(
+            Equal(BOOKING_STATUS.RESERVED),
+            Equal(BOOKING_STATUS.CONFIRMED),
+          ),
+        },
+      });
+
+      if (existingBooking) {
+        throw new BadRequestException(
+          'You already have an active booking for this trip',
+        );
+      }
+
+      // Update seats
+      trip.seatsAvailable -= dto.seats;
+      await tripRepo.save(trip);
+
+      const booking = bookingRepo.create({
+        tripId: dto.tripId,
+        riderId: user.id,
+        seats: dto.seats,
+        createdBy: user.userName,
+        status: BOOKING_STATUS.RESERVED,
+      });
+
+      return await bookingRepo.save(booking);
+    });
+  }
+
+  async cancelTrip(
+    user: User,
+    tripId: string,
+    bookingId: string,
+  ): Promise<void> {
+    return this.dataSource.transaction(async (manager) => {
+      const tripRepo = manager.getRepository(Trip);
+      const bookingRepo = manager.getRepository(Booking);
+
+      // 🔒 Lock row to prevent concurrent bookings
+      const trip = await tripRepo.findOne({
+        where: { id: tripId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!trip) {
+        throw new NotFoundException('Trip not found');
+      }
+
+      if (trip.status !== TRIP_STATUS.SCHEDULED) {
+        throw new BadRequestException(
+          `Cannot Cancel a trip that is ${trip.status.toLowerCase()}`,
+        );
+      }
+
+      const booking = await bookingRepo.findOne({
+        where: {
+          id: bookingId,
+          tripId: tripId,
+          riderId: user.id,
+        },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!booking) {
+        throw new NotFoundException('Booking not found for this user and trip');
+      }
+
+      if (booking.status == BOOKING_STATUS.CONFIRMED) {
+        throw new BadRequestException(
+          `Cannot Cancel a booking that is ${booking.status.toLowerCase()}`,
+        );
+      }
+
+      if (booking.status == BOOKING_STATUS.CANCELLED) {
+        throw new BadRequestException(
+          `Booking is already ${booking.status.toLowerCase()}`,
+        );
+      }
+
+      booking.status = BOOKING_STATUS.CANCELLED;
+      booking.updatedBy = user.userName;
+      await bookingRepo.save(booking);
+
+      // Restore seats
+      const newSeats = trip.seatsAvailable + booking.seats;
+
+      if (newSeats > trip.seatsTotal) {
+        throw new ConflictException('Seat count exceeds trip capacity');
+      }
+
+      trip.seatsAvailable = newSeats;
+      trip.updatedBy = user.userName;
+      await tripRepo.save(trip);
+    });
   }
 }
