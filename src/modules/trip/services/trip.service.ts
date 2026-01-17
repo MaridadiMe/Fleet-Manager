@@ -11,7 +11,15 @@ import { Trip } from '../entities/trip.entity';
 import { TripRepository } from '../repositories/trip.repository';
 import { CreateTripDto } from '../dtos/create-trip.dto';
 import { User } from 'src/modules/auth/types/user.type';
-import { Between, DataSource, Equal, Or } from 'typeorm';
+import {
+  Between,
+  DataSource,
+  Equal,
+  FindOptionsWhere,
+  In,
+  Not,
+  Or,
+} from 'typeorm';
 import { TRIP_STATUS } from '../enums/trip-status.enum';
 import { SearchTripsDto } from '../dtos/search-trip.dto';
 import { ListTripsDto } from '../dtos/list-trip.dto';
@@ -66,9 +74,10 @@ export class TripService extends BaseService<Trip> {
 
   async getUserTrips(user: User) {
     try {
-      const where = {
+      const where: FindOptionsWhere<Trip> = {
         bookings: {
-          createdBy: user.userName,
+          riderId: user.id,
+          status: In([BOOKING_STATUS.RESERVED, BOOKING_STATUS.CONFIRMED]),
         },
       };
       const results = await this.findPaged(where, 1, 10, {
