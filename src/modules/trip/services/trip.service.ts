@@ -414,6 +414,7 @@ export class TripService extends BaseService<Trip> {
 
       booking.status = BOOKING_STATUS.CANCELLED;
       booking.updatedBy = user.userName;
+      booking.canceledAt = new Date();
       await bookingRepo.save(booking);
 
       // Restore seats

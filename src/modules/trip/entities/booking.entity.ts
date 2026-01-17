@@ -25,4 +25,10 @@ export class Booking extends BaseEntity {
     default: BOOKING_STATUS.CONFIRMED,
   })
   status: string;
+
+  @Column({ nullable: true })
+  canceledAt?: Date;
+
+  @Column({ nullable: true })
+  confirmedAt?: Date;
 }
