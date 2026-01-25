@@ -29,6 +29,7 @@ import { BOOKING_STATUS } from '../enums/booking-status.enum';
 import { Booking } from '../entities/booking.entity';
 import { BookTripDto } from '../dtos/book-trip.dto';
 import { DefaultConstants } from 'src/common/constants/default.constants';
+import { SearchNearbyTripsDto } from '../dtos/search-nearby-trips.dto';
 
 @Injectable()
 export class TripService extends BaseService<Trip> {
@@ -258,6 +259,75 @@ export class TripService extends BaseService<Trip> {
     return Math.acos(safeCos) * (180 / Math.PI);
   }
 
+  /**
+   * Finds trips that start nearby the given location and depart on or after the requested time.
+   * Used for "browse nearby available rides" feature (no drop-off required).
+   */
+  async findNearbyTrips(
+    dto: SearchNearbyTripsDto,
+    user?: User,
+  ): Promise<TripSearchResultDto[]> {
+    try {
+      const {
+        startLat,
+        startLon,
+        departureFrom,
+        radiusKm = 10,
+        limit = 20,
+      } = dto;
+
+      if (!startLat || !startLon || !departureFrom) {
+        throw new BadRequestException(
+          'startLat, startLon and departureFrom are required',
+        );
+      }
+
+      // Approximate bounding box (fast & works without PostGIS)
+      const delta = radiusKm / 111; // ~111 km per degree at equator (good enough approximation)
+
+      const minLat = startLat - delta;
+      const maxLat = startLat + delta;
+      const minLon = startLon - delta;
+      const maxLon = startLon + delta;
+
+      this.logger.debug(departureFrom);
+
+      const qb = this.repository
+        .createQueryBuilder('trip')
+        .leftJoinAndSelect('trip.driver', 'driver')
+        .leftJoinAndSelect('driver.assignedVehicle', 'vehicle')
+        .where('trip.status = :status', { status: TRIP_STATUS.SCHEDULED })
+        .andWhere('trip.seatsAvailable > 0')
+        .andWhere('trip.departureAt > :departureFrom', { departureFrom })
+        .andWhere('trip.startLat BETWEEN :minLat AND :maxLat', {
+          minLat,
+          maxLat,
+        })
+        .andWhere('trip.startLon BETWEEN :minLon AND :maxLon', {
+          minLon,
+          maxLon,
+        })
+
+        .orderBy('trip.departureAt', 'ASC')
+        .take(limit);
+
+      const nearbyTrips = await qb.getMany();
+
+      this.logger.debug(
+        `Found ${nearbyTrips.length} nearby trips within ${radiusKm} km of (${startLat}, ${startLon})`,
+      );
+
+      return nearbyTrips.map((trip) => this.tripToDto(trip));
+    } catch (error) {
+      this.logger.error('Error Finding Nearby Trips', error.message);
+      throw new InternalServerErrorException('Error Finding Nearby Trips');
+    }
+  }
+
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI / 180);
+  }
+
   private tripToDto(trip: Trip): TripSearchResultDto {
     const driver = trip.driver;
     const vehicle = driver?.assignedVehicle;
@@ -414,7 +484,7 @@ export class TripService extends BaseService<Trip> {
 
       booking.status = BOOKING_STATUS.CANCELLED;
       booking.updatedBy = user.userName;
-      booking.canceledAt = new Date();
+      booking.canceledAt = new Date(Date.now());
       await bookingRepo.save(booking);
 
       // Restore seats

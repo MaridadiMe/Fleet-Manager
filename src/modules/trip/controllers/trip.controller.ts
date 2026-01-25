@@ -20,6 +20,8 @@ import { SearchTripsDto } from '../dtos/search-trip.dto';
 import { ListTripsDto } from '../dtos/list-trip.dto';
 import { BasePaginatedResponseDto } from 'src/common/dto/base-paginated-response.dto';
 import { BookTripDto } from '../dtos/book-trip.dto';
+import { SearchNearbyTripsDto } from '../dtos/search-nearby-trips.dto';
+import { PublicRoute } from 'src/modules/auth/decorators/public-route.decorator';
 
 @Controller('trips')
 @ApiTags('Trips')
@@ -64,6 +66,14 @@ export class TripController {
     @AuthenticatedUser() user: User,
   ) {
     const trips = await this.service.searchTrips(dto, user);
+    return new BaseResponseDto(trips);
+  }
+
+  @Get('nearby')
+  @HttpCode(HttpStatus.OK)
+  @Permissions()
+  async getNearbyTrips(@Query() dto: SearchNearbyTripsDto) {
+    const trips = await this.service.findNearbyTrips(dto, {} as User);
     return new BaseResponseDto(trips);
   }
 
