@@ -15,12 +15,12 @@ export class SearchNearbyTripsDto {
   @ApiProperty()
   @Type(() => Number)
   @IsNumber()
-  startLat: number;
+  pickupLat: number;
 
   @ApiProperty()
   @Type(() => Number)
   @IsNumber()
-  startLon: number;
+  pickupLon: number;
 
   @ApiProperty()
   @IsDateString()

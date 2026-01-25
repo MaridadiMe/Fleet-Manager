@@ -269,14 +269,14 @@ export class TripService extends BaseService<Trip> {
   ): Promise<TripSearchResultDto[]> {
     try {
       const {
-        startLat,
-        startLon,
+        pickupLat,
+        pickupLon,
         departureFrom,
         radiusKm = 10,
         limit = 20,
       } = dto;
 
-      if (!startLat || !startLon || !departureFrom) {
+      if (!pickupLat || !pickupLon || !departureFrom) {
         throw new BadRequestException(
           'startLat, startLon and departureFrom are required',
         );
@@ -285,10 +285,10 @@ export class TripService extends BaseService<Trip> {
       // Approximate bounding box (fast & works without PostGIS)
       const delta = radiusKm / 111; // ~111 km per degree at equator (good enough approximation)
 
-      const minLat = startLat - delta;
-      const maxLat = startLat + delta;
-      const minLon = startLon - delta;
-      const maxLon = startLon + delta;
+      const minLat = pickupLat - delta;
+      const maxLat = pickupLat + delta;
+      const minLon = pickupLon - delta;
+      const maxLon = pickupLon + delta;
 
       this.logger.debug(departureFrom);
 
@@ -314,7 +314,7 @@ export class TripService extends BaseService<Trip> {
       const nearbyTrips = await qb.getMany();
 
       this.logger.debug(
-        `Found ${nearbyTrips.length} nearby trips within ${radiusKm} km of (${startLat}, ${startLon})`,
+        `Found ${nearbyTrips.length} nearby trips within ${radiusKm} km of (${pickupLat}, ${pickupLon})`,
       );
 
       return nearbyTrips.map((trip) => this.tripToDto(trip));
