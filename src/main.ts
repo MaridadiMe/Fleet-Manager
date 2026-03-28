@@ -14,7 +14,7 @@ dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.init();
+  // await app.init();
 
   app.setGlobalPrefix(process.env.API_BASE_URL ?? 'api/v1/app');
   const APP_PORT = process.env.APP_PORT;
