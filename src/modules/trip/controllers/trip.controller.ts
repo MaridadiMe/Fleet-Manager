@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Param,
   Post,
   Query,
@@ -22,6 +23,7 @@ import { BasePaginatedResponseDto } from 'src/common/dto/base-paginated-response
 import { BookTripDto } from '../dtos/book-trip.dto';
 import { SearchNearbyTripsDto } from '../dtos/search-nearby-trips.dto';
 import { PublicRoute } from 'src/modules/auth/decorators/public-route.decorator';
+import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
 
 @Controller('trips')
 @ApiTags('Trips')
@@ -96,5 +98,17 @@ export class TripController {
   ) {
     const booking = await this.service.cancelTrip(user, tripId, bookingId);
     return new BaseResponseDto(booking);
+  }
+
+  @EventPattern('payment.completed.sfms')
+  getNotifications(@Payload() data: any, @Ctx() context: RmqContext) {
+    const channel = context.getChannelRef();
+    const originalMsg = context.getMessage();
+
+    Logger.log(`Received payment notification: ${JSON.stringify(data)}`);
+    Logger.log(`channel: ${channel}`);
+    Logger.log(`Message ID: ${originalMsg.properties.messageId}`);
+
+    channel.ack(originalMsg);
   }
 }

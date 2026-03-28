@@ -10,6 +10,7 @@ import { VehicleModule } from './modules/vehicle/vehicle.module';
 import { DriverModule } from './modules/driver/driver.module';
 import { OwnerModule } from './modules/owner/owner.module';
 import { TripModule } from './modules/trip/trip.module';
+import { RabbitMqModule } from './modules/rabbitMq/rabbitMq.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { TripModule } from './modules/trip/trip.module';
       useFactory: (configSevice: ConfigService) =>
         databaseConnectionOptions(configSevice),
     }),
+    RabbitMqModule,
     AuthModule,
     VehicleModule,
     DriverModule,
