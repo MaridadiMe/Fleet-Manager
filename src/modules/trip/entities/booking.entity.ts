@@ -19,10 +19,19 @@ export class Booking extends BaseEntity {
   @Column({ type: 'int', default: 1 })
   seats: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  bookingAmount?: number;
+
+  @Column({ nullable: true })
+  orderReference?: string;
+
+  @Column({ nullable: true })
+  transactionReference?: string;
+
   @Column({
     type: 'enum',
     enum: BOOKING_STATUS,
-    default: BOOKING_STATUS.CONFIRMED,
+    default: BOOKING_STATUS.RESERVED,
   })
   status: string;
 

@@ -28,8 +28,8 @@ import { Page } from 'src/common/pagination/page.interface';
 import { BOOKING_STATUS } from '../enums/booking-status.enum';
 import { Booking } from '../entities/booking.entity';
 import { BookTripDto } from '../dtos/book-trip.dto';
-import { DefaultConstants } from 'src/common/constants/default.constants';
 import { SearchNearbyTripsDto } from '../dtos/search-nearby-trips.dto';
+import { PaymentData } from '../types/payment-data.type';
 
 @Injectable()
 export class TripService extends BaseService<Trip> {
@@ -420,12 +420,18 @@ export class TripService extends BaseService<Trip> {
       trip.seatsAvailable -= dto.seats;
       await tripRepo.save(trip);
 
+      const price = Number(trip.price) * dto.seats;
+      // Do something here in the future
+      // What if price is zero?
+      // What if there are offers?
+
       const booking = bookingRepo.create({
         tripId: dto.tripId,
         riderId: user.id,
         seats: dto.seats,
         createdBy: user.userName,
         status: BOOKING_STATUS.RESERVED,
+        bookingAmount: price,
       });
 
       return await bookingRepo.save(booking);
@@ -498,5 +504,36 @@ export class TripService extends BaseService<Trip> {
       trip.updatedBy = user.userName;
       await tripRepo.save(trip);
     });
+  }
+
+  async handleBookingPayment(paymentData: PaymentData): Promise<void> {
+    try {
+      const bookingRepo = this.dataSource.getRepository(Booking);
+
+      const booking = await bookingRepo.findOne({
+        where: { id: paymentData.clientReference },
+      });
+
+      if (!booking) {
+        this.logger.warn(
+          `Booking not found for payment client reference: ${paymentData.clientReference}`,
+        );
+        return;
+      }
+      if (paymentData.status === 'PAID') {
+        booking.status = BOOKING_STATUS.CONFIRMED;
+        booking.updatedBy = 'system';
+        booking.orderReference = paymentData.orderReference;
+        booking.transactionReference = paymentData.transactionReference;
+        booking.confirmedAt = new Date(Date.now());
+        await bookingRepo.save(booking);
+        this.logger.log(
+          `Booking ${booking.id} confirmed for trip ${booking.tripId} after payment`,
+        );
+      }
+    } catch (error) {
+      this.logger.error('Error handling booking payment', error.message);
+      throw new InternalServerErrorException('Error handling booking payment');
+    }
   }
 }
