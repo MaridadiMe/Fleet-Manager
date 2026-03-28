@@ -24,6 +24,7 @@ import { BookTripDto } from '../dtos/book-trip.dto';
 import { SearchNearbyTripsDto } from '../dtos/search-nearby-trips.dto';
 import { PublicRoute } from 'src/modules/auth/decorators/public-route.decorator';
 import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
+import { PaymentData } from '../types/payment-data.type';
 
 @Controller('trips')
 @ApiTags('Trips')
@@ -101,13 +102,15 @@ export class TripController {
   }
 
   @EventPattern('payment.completed.sfms')
-  getNotifications(@Payload() data: any, @Ctx() context: RmqContext) {
+  async getNotifications(
+    @Payload() data: PaymentData,
+    @Ctx() context: RmqContext,
+  ) {
     const channel = context.getChannelRef();
     const originalMsg = context.getMessage();
 
     Logger.log(`Received payment notification: ${JSON.stringify(data)}`);
-    Logger.log(`channel: ${channel}`);
-    Logger.log(`Message ID: ${originalMsg.properties.messageId}`);
+    await this.service.handleBookingPayment(data);
 
     channel.ack(originalMsg);
   }
