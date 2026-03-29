@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  RequestMethod,
 } from '@nestjs/common';
 import { BaseService } from 'src/common/services/base.service';
 import { Trip } from '../entities/trip.entity';
@@ -30,6 +31,8 @@ import { Booking } from '../entities/booking.entity';
 import { BookTripDto } from '../dtos/book-trip.dto';
 import { SearchNearbyTripsDto } from '../dtos/search-nearby-trips.dto';
 import { PaymentData } from '../types/payment-data.type';
+import { ConfigService } from '@nestjs/config';
+import { RestclientService } from 'src/modules/restclient/restclient.service';
 
 @Injectable()
 export class TripService extends BaseService<Trip> {
@@ -37,6 +40,8 @@ export class TripService extends BaseService<Trip> {
   constructor(
     protected readonly repository: TripRepository,
     private readonly dataSource: DataSource,
+    private readonly configService: ConfigService,
+    private readonly restClient: RestclientService,
   ) {
     super(repository);
   }
@@ -372,7 +377,7 @@ export class TripService extends BaseService<Trip> {
     };
   }
 
-  async bookTrip(user: any, dto: BookTripDto): Promise<Booking> {
+  async bookTrip(user: User, dto: BookTripDto): Promise<Booking> {
     return this.dataSource.transaction(async (manager) => {
       const tripRepo = manager.getRepository(Trip);
       const bookingRepo = manager.getRepository(Booking);
@@ -430,6 +435,7 @@ export class TripService extends BaseService<Trip> {
         riderId: user.id,
         seats: dto.seats,
         createdBy: user.userName,
+        riderPhone: user.phone,
         status: BOOKING_STATUS.RESERVED,
         bookingAmount: price,
       });
@@ -530,10 +536,36 @@ export class TripService extends BaseService<Trip> {
         this.logger.log(
           `Booking ${booking.id} confirmed for trip ${booking.tripId} after payment`,
         );
+
+        const message = `Your payment has been received and booking confirmed! Thank you for choosing Yatown.`;
+
+        // Probably just raise and event and handle the rest out of here
+        await this.sendSms(message, booking?.riderPhone);
       }
     } catch (error) {
       this.logger.error('Error handling booking payment', error.message);
       throw new InternalServerErrorException('Error handling booking payment');
+    }
+  }
+
+  async sendSms(message: string, recipient: string) {
+    try {
+      const sendSmsPayload = {
+        message,
+        recipients: [recipient],
+      };
+      const token = `Bearer ${this.configService.get('IAM_TOKEN')}`;
+      const nseUrl = this.configService.get('NSE_BASE_URL');
+      const nseSmsEndpoint = this.configService.get('NSE_SMS_ENDPOINT');
+      await this.restClient.request({
+        url: `${nseUrl}${nseSmsEndpoint}`,
+        method: RequestMethod.POST,
+        payload: sendSmsPayload,
+        headers: { Authorization: token },
+      });
+    } catch (error) {
+      this.logger.error('Error While Sending SMS', error.message);
+      return null;
     }
   }
 }
