@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Logger,
   Param,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -98,6 +99,23 @@ export class TripController {
     @Param('bookingId') bookingId: string,
   ) {
     const booking = await this.service.cancelTrip(user, tripId, bookingId);
+    return new BaseResponseDto(booking);
+  }
+
+  @Post(':tripId/bookings/:bookingId')
+  @Permissions()
+  async payForBooking(
+    @AuthenticatedUser() user: User,
+    @Param('bookingId') bookingId: string,
+    @Query('paymentMobileNumber') paymentMobileNumber: string,
+    @Query('tripId') tripId: string,
+  ) {
+    const booking = await this.service.payForBooking(
+      user,
+      paymentMobileNumber,
+      tripId,
+      bookingId,
+    );
     return new BaseResponseDto(booking);
   }
 

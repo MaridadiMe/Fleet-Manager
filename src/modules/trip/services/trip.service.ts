@@ -33,6 +33,8 @@ import { SearchNearbyTripsDto } from '../dtos/search-nearby-trips.dto';
 import { PaymentData } from '../types/payment-data.type';
 import { ConfigService } from '@nestjs/config';
 import { RestclientService } from 'src/modules/restclient/restclient.service';
+import { RequestPaymentDto } from '../dtos/request-payment.dto';
+import { formatPhoneNumber } from 'src/common/helpers/app-helpers';
 
 @Injectable()
 export class TripService extends BaseService<Trip> {
@@ -433,15 +435,99 @@ export class TripService extends BaseService<Trip> {
       const booking = bookingRepo.create({
         tripId: dto.tripId,
         riderId: user.id,
+        riderEmail: user.email,
+        riderName: user.firstName + ' ' + user.lastName,
+        riderPhone: user.phone,
         seats: dto.seats,
         createdBy: user.userName,
-        riderPhone: user.phone,
         status: BOOKING_STATUS.RESERVED,
         bookingAmount: price,
       });
 
       return await bookingRepo.save(booking);
     });
+  }
+
+  async payForBooking(
+    user: User,
+    paymentMobileNo: string,
+    tripId: string,
+    bookingId: string,
+  ): Promise<Booking> {
+    return this.dataSource.transaction(async (manager) => {
+      const tripRepo = manager.getRepository(Trip);
+      const bookingRepo = manager.getRepository(Booking);
+      // 🔒 Lock row to prevent concurrent bookings
+      const trip = await tripRepo.findOne({
+        where: { id: tripId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!trip) {
+        throw new NotFoundException('Trip not found');
+      }
+
+      if (
+        trip.status == TRIP_STATUS.COMPLETED ||
+        trip.status == TRIP_STATUS.CANCELLED
+      ) {
+        throw new BadRequestException(
+          `This trip is already ${trip.status.toLowerCase()}`,
+        );
+      }
+
+      const booking = await bookingRepo.findOne({
+        where: {
+          id: bookingId,
+          tripId: tripId,
+          riderId: user.id,
+        },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!booking) {
+        throw new NotFoundException('Booking not found for this user and trip');
+      }
+
+      if (
+        booking.status == BOOKING_STATUS.CONFIRMED ||
+        booking.status == BOOKING_STATUS.CANCELLED
+      ) {
+        throw new BadRequestException(
+          `Booking is already ${booking.status.toLowerCase()}`,
+        );
+      }
+      // Here we would integrate with the payment gateway and process the payment using the provided mobile number.
+      const payload: RequestPaymentDto = {
+        clientReference: booking.id,
+        buyerName: booking.riderName,
+        buyerEmail: booking.riderEmail,
+        buyerPhone: formatPhoneNumber(paymentMobileNo),
+        totalAmount: booking.bookingAmount.toString(),
+        currency: 'TZS',
+        description: `Payment for Ride Booking ${booking.id}`,
+        pullFromWalllet: true,
+      };
+
+      await this.requestPayment(payload);
+      return booking;
+    });
+  }
+
+  async requestPayment(dto: RequestPaymentDto) {
+    try {
+      this.restClient.request({
+        url: `${this.configService.get('PGW_BASE_URL')}${this.configService.get('PGW_ORDERS_ENDPOINT')}`,
+        headers: {
+          Authorization: `Bearer ${this.configService.get('IAM_TOKEN')}`,
+        },
+        payload: dto,
+        method: RequestMethod.POST,
+      });
+    } catch (error) {
+      this.logger.error('Error Requesting Payment', error.message);
+      throw new InternalServerErrorException('Error Requesting Payment');
+    }
   }
 
   async cancelTrip(
@@ -537,7 +623,7 @@ export class TripService extends BaseService<Trip> {
           `Booking ${booking.id} confirmed for trip ${booking.tripId} after payment`,
         );
 
-        const message = `Your payment has been received and booking confirmed! Thank you for choosing Yatown.`;
+        const message = `Dear ${booking.riderName}, Your payment has been received and booking confirmed! Thank you for choosing Yatown.`;
 
         // Probably just raise and event and handle the rest out of here
         await this.sendSms(message, booking?.riderPhone);

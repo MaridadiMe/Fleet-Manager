@@ -17,6 +17,12 @@ export class Booking extends BaseEntity {
   riderId: string;
 
   @Column({ nullable: true })
+  riderName?: string;
+
+  @Column({ nullable: true })
+  riderEmail?: string;
+
+  @Column({ nullable: true })
   riderPhone?: string;
 
   @Column({ type: 'int', default: 1 })
