@@ -455,6 +455,12 @@ export class TripService extends BaseService<Trip> {
     bookingId: string,
   ): Promise<Booking> {
     return this.dataSource.transaction(async (manager) => {
+      if (!tripId || !bookingId || !paymentMobileNo) {
+        throw new BadRequestException(
+          'tripId, bookingId and paymentMobileNumber are required',
+        );
+      }
+
       const tripRepo = manager.getRepository(Trip);
       const bookingRepo = manager.getRepository(Booking);
       // 🔒 Lock row to prevent concurrent bookings

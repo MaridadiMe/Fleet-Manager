@@ -102,13 +102,13 @@ export class TripController {
     return new BaseResponseDto(booking);
   }
 
-  @Post(':tripId/bookings/:bookingId')
+  @Post(':tripId/bookings/:bookingId/pay')
   @Permissions()
   async payForBooking(
     @AuthenticatedUser() user: User,
     @Param('bookingId') bookingId: string,
     @Query('paymentMobileNumber') paymentMobileNumber: string,
-    @Query('tripId') tripId: string,
+    @Param('tripId') tripId: string,
   ) {
     const booking = await this.service.payForBooking(
       user,
