@@ -16,8 +16,10 @@ import {
   Between,
   DataSource,
   Equal,
+  FindManyOptions,
   FindOptionsWhere,
   In,
+  MoreThan,
   Not,
   Or,
 } from 'typeorm';
@@ -35,6 +37,7 @@ import { ConfigService } from '@nestjs/config';
 import { RestclientService } from 'src/modules/restclient/restclient.service';
 import { RequestPaymentDto } from '../dtos/request-payment.dto';
 import { formatPhoneNumber } from 'src/common/helpers/app-helpers';
+import { PublicTripResultDto } from '../dtos/public-trip-result.dto';
 
 @Injectable()
 export class TripService extends BaseService<Trip> {
@@ -58,7 +61,7 @@ export class TripService extends BaseService<Trip> {
       const conflict = await this.repository.findOne({
         where: {
           driverId: dto.driverId,
-          status: 'scheduled',
+          status: TRIP_STATUS.SCHEDULED,
           departureAt: Between(windowStart, windowEnd),
         },
       });
@@ -99,6 +102,23 @@ export class TripService extends BaseService<Trip> {
     } catch (error) {
       this.logger.error('Error Getting Trips', error.message);
       throw new InternalServerErrorException('Error Getting User Trips');
+    }
+  }
+
+  async listPublicTrips() {
+    try {
+      const trips = await this.repository.find({
+        where: {
+          status: TRIP_STATUS.SCHEDULED,
+          departureAt: MoreThan(new Date()),
+        },
+        take: 10,
+        order: { departureAt: 'ASC' },
+      });
+      return trips.map((trip) => this.tripToPublicDto(trip));
+    } catch (error) {
+      this.logger.error('Error Getting Public Trips', error.message);
+      throw new InternalServerErrorException('Error Getting Public Trips');
     }
   }
 
@@ -333,6 +353,23 @@ export class TripService extends BaseService<Trip> {
 
   private deg2rad(deg: number): number {
     return deg * (Math.PI / 180);
+  }
+
+  private tripToPublicDto(trip: Trip): PublicTripResultDto {
+    return {
+      id: trip.id,
+      startLat: trip.startLat,
+      startLon: trip.startLon,
+      startAddress: trip.startAddress,
+      endLat: trip.endLat,
+      endLon: trip.endLon,
+      endAddress: trip.endAddress,
+      departureAt: trip.departureAt,
+      seatsTotal: trip.seatsTotal,
+      seatsAvailable: trip.seatsAvailable,
+      price: trip.price,
+      status: trip.status,
+    };
   }
 
   private tripToDto(trip: Trip): TripSearchResultDto {
