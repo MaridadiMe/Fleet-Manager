@@ -27,7 +27,10 @@ import {
 import { TRIP_STATUS } from '../enums/trip-status.enum';
 import { SearchTripsDto } from '../dtos/search-trip.dto';
 import { ListTripsDto } from '../dtos/list-trip.dto';
-import { TripSearchResultDto } from '../dtos/trip-search-result.dto';
+import {
+  FullTripResultDto,
+  TripSearchResultDto,
+} from '../dtos/trip-search-result.dto';
 import { Page } from 'src/common/pagination/page.interface';
 import { BOOKING_STATUS } from '../enums/booking-status.enum';
 import { Booking } from '../entities/booking.entity';
@@ -138,7 +141,7 @@ export class TripService extends BaseService<Trip> {
     });
   }
 
-  async getTrip(tripId: string, user: User) {
+  async getTrip(tripId: string, user: User): Promise<FullTripResultDto> {
     const trip = await this.repository.findOne({
       where: { id: tripId },
       relations: this.buildRelations({} as SearchTripsDto, user),
@@ -147,10 +150,8 @@ export class TripService extends BaseService<Trip> {
     if (!trip) {
       throw new NotFoundException('Trip not found');
     }
-    return trip;
+    return this.tripToFullTripDto(trip);
   }
-
-  private;
 
   private buildRelations(dto: SearchTripsDto, user: User): string[] {
     // For drivers and admins, we want to show all details including bookings and vehicle info.
@@ -440,6 +441,63 @@ export class TripService extends BaseService<Trip> {
           status: bk.status,
           seats: bk.seats,
           bookedAt: bk.createdAt,
+        };
+      }),
+    };
+  }
+
+  private tripToFullTripDto(trip: Trip): FullTripResultDto {
+    const driver = trip.driver;
+    const vehicle = driver?.assignedVehicle;
+    const bookings = trip?.bookings || [];
+
+    return {
+      id: trip.id,
+      startLat: trip.startLat,
+      startLon: trip.startLon,
+      startAddress: trip.startAddress,
+      endLat: trip.endLat,
+      endLon: trip.endLon,
+      endAddress: trip.endAddress,
+      departureAt: trip.departureAt,
+      seatsTotal: trip.seatsTotal,
+      seatsAvailable: trip.seatsAvailable,
+      price: Number(trip.price),
+      status: trip.status,
+      createdAt: trip.createdAt,
+      createdBy: trip.createdBy,
+
+      driver: driver
+        ? {
+            id: driver.id,
+            name: driver.driverName,
+            phone: driver.phone,
+            email: driver.email,
+            licenceNumber: driver.licenceNumber,
+            nin: driver.nationalIdNumber,
+            createdBy: driver.createdBy,
+            createdAt: driver.createdAt,
+          }
+        : null,
+
+      vehicle: vehicle
+        ? {
+            id: vehicle.id,
+            registrationNumber: vehicle.registrationNumber,
+            type: vehicle.type,
+            createdAt: vehicle.createdAt,
+            createdBy: vehicle.createdBy,
+          }
+        : null,
+      bookings: bookings.map((bk) => {
+        return {
+          id: bk.id,
+          status: bk.status,
+          seats: bk.seats,
+          bookedAt: bk.createdAt,
+          riderName: bk.riderName,
+          riderEmail: bk.riderEmail,
+          riderPhone: bk.riderPhone,
         };
       }),
     };
