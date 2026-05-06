@@ -17,6 +17,7 @@ import {
   DataSource,
   Equal,
   FindManyOptions,
+  FindOptionsOrderValue,
   FindOptionsWhere,
   In,
   MoreThan,
@@ -123,17 +124,45 @@ export class TripService extends BaseService<Trip> {
   }
 
   async listTrips(dto: ListTripsDto, user: User) {
-    return this.findPaged(
-      {
-        status: dto.status,
-        driverId: dto.driverId,
-      },
-      dto.page,
-      dto.limit,
-      {
-        order: { departureAt: 'ASC' },
-      },
-    );
+    const where: FindOptionsWhere<Trip> = {
+      status: dto.status,
+      driverId: dto.driverId,
+    };
+
+    if (user.role != 'ADMIN') {
+      where.createdBy = user.userName;
+    }
+
+    return this.findPaged(where, dto.page, dto.limit, {
+      order: { departureAt: 'ASC' },
+    });
+  }
+
+  async getTrip(tripId: string, user: User) {
+    const trip = await this.repository.findOne({
+      where: { id: tripId },
+      relations: this.buildRelations({} as SearchTripsDto, user),
+    });
+
+    if (!trip) {
+      throw new NotFoundException('Trip not found');
+    }
+    return trip;
+  }
+
+  private;
+
+  private buildRelations(dto: SearchTripsDto, user: User): string[] {
+    // For drivers and admins, we want to show all details including bookings and vehicle info.
+    // For regular riders, we only show their own booking info and driver/vehicle details, but not other riders' bookings.
+    const relations: string[] = [];
+    if (user?.role === 'DRIVER' || user.role === 'ADMIN') {
+      relations.push('driver', 'driver.assignedVehicle', 'bookings');
+    } else {
+      relations.push('bookings', 'driver', 'driver.assignedVehicle');
+    }
+
+    return relations;
   }
 
   async searchTrips(

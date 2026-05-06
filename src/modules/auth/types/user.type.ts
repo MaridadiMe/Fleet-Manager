@@ -6,6 +6,7 @@ export type User = {
   lastName: string;
   userName: string;
   permissions: string[];
+  role: string;
   iat: number;
   exp: number;
 };

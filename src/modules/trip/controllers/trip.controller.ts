@@ -54,6 +54,17 @@ export class TripController {
     return new BasePaginatedResponseDto(result.items, result.meta);
   }
 
+  @Get(':tripId')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('VIEW_TRIPS')
+  async getTrip(
+    @Param('tripId') tripId: string,
+    @AuthenticatedUser() user: User,
+  ) {
+    const result = await this.service.getTrip(tripId, user);
+    return new BaseResponseDto(result);
+  }
+
   @Get('public')
   @HttpCode(HttpStatus.OK)
   @PublicRoute()
