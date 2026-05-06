@@ -503,7 +503,11 @@ export class TripService extends BaseService<Trip> {
     };
   }
 
-  async bookTrip(user: User, dto: BookTripDto): Promise<Booking> {
+  async bookTrip(
+    user: User,
+    tripId: string,
+    dto: BookTripDto,
+  ): Promise<Booking> {
     return this.dataSource.transaction(async (manager) => {
       const tripRepo = manager.getRepository(Trip);
       const bookingRepo = manager.getRepository(Booking);

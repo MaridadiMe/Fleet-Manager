@@ -62,17 +62,6 @@ export class TripController {
     return new BaseResponseDto(result, HttpStatus.OK);
   }
 
-  @Get(':tripId')
-  @HttpCode(HttpStatus.OK)
-  @Permissions('VIEW_TRIPS')
-  async getTrip(
-    @Param('tripId') tripId: string,
-    @AuthenticatedUser() user: User,
-  ) {
-    const result = await this.service.getTrip(tripId, user);
-    return new BaseResponseDto(result);
-  }
-
   @Get('mine')
   @HttpCode(HttpStatus.OK)
   @Permissions()
@@ -100,13 +89,25 @@ export class TripController {
     return new BaseResponseDto(trips);
   }
 
+  @Get(':tripId')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('VIEW_TRIPS')
+  async getTrip(
+    @Param('tripId') tripId: string,
+    @AuthenticatedUser() user: User,
+  ) {
+    const result = await this.service.getTrip(tripId, user);
+    return new BaseResponseDto(result);
+  }
+
   @Post(':tripId/bookings')
   @Permissions()
   async bookTrip(
     @AuthenticatedUser() user: User,
+    @Param('tripId') tripId: string,
     @Body() payload: BookTripDto,
   ) {
-    const booking = await this.service.bookTrip(user, payload);
+    const booking = await this.service.bookTrip(user, tripId, payload);
     return new BaseResponseDto(booking);
   }
 
