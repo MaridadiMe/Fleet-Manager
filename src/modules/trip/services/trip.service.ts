@@ -137,7 +137,7 @@ export class TripService extends BaseService<Trip> {
     }
 
     return this.findPaged(where, dto.page, dto.limit, {
-      order: { departureAt: 'ASC' },
+      order: { createdAt: 'DESC' },
     });
   }
 
