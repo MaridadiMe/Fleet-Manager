@@ -9,11 +9,7 @@ import {
 } from 'class-validator';
 
 export class CreateTripDto {
-  @ApiPropertyOptional()
-  @IsString()
-  driverId: string;
-
-  @ApiPropertyOptional()
+  @ApiProperty()
   @IsString()
   driverUserId: string;
 

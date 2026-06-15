@@ -62,22 +62,19 @@ export class TripService extends BaseService<Trip> {
       const windowStart = new Date(tripTime.getTime() - 30 * 60 * 1000);
       const windowEnd = new Date(tripTime.getTime() + 30 * 60 * 1000);
 
-      let driverId = null;
+      const driver = await this.dataSource.getRepository('Driver').findOne({
+        where: { userId: dto.driverUserId },
+      });
 
-      if (user.role == 'ADMIN' && dto.driverId) {
-        driverId = dto.driverId;
-      } else if (user.role == 'DRIVER' && dto.driverUserId) {
-        const driver = await this.dataSource.getRepository('Driver').findOne({
-          where: { userId: dto.driverUserId },
-        });
-        driverId = driver?.id;
-      } else {
-        throw new NotFoundException('Driver not found');
+      if (!driver) {
+        throw new NotFoundException(
+          'Driver not found for the provided user ID',
+        );
       }
 
       const conflict = await this.repository.findOne({
         where: {
-          driverId: driverId,
+          driverId: driver.id,
           status: TRIP_STATUS.SCHEDULED,
           departureAt: Between(windowStart, windowEnd),
         },
@@ -91,7 +88,7 @@ export class TripService extends BaseService<Trip> {
 
       const trip = this.repository.create({
         ...dto,
-        driverId: driverId,
+        driver: driver,
         createdBy: user.userName,
       });
       return this.repository.save(trip);
