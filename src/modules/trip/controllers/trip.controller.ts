@@ -70,6 +70,14 @@ export class TripController {
     return new BasePaginatedResponseDto(result.items, result.meta);
   }
 
+  @Get('driver')
+  @HttpCode(HttpStatus.OK)
+  @Permissions()
+  async getDriverTrips(@AuthenticatedUser() user: User) {
+    const result = await this.service.getDriverTrips(user);
+    return new BasePaginatedResponseDto(result.items, result.meta);
+  }
+
   @Get('search')
   @HttpCode(HttpStatus.OK)
   @Permissions()

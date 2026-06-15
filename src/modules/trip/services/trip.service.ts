@@ -120,6 +120,36 @@ export class TripService extends BaseService<Trip> {
     }
   }
 
+  async getDriverTrips(user: User) {
+    try {
+      const driver = await this.dataSource.getRepository('Driver').findOne({
+        where: { userId: user.id },
+      });
+
+      if (!driver) {
+        throw new NotFoundException(
+          'Driver not found for the provided user ID',
+        );
+      }
+
+      const where: FindOptionsWhere<Trip> = {
+        driverId: driver.id,
+      };
+
+      const results = await this.findPaged(where, 1, 10, {
+        relations: ['bookings', 'driver', 'driver.assignedVehicle'],
+      });
+      const paginatedUserTrips: Page<TripSearchResultDto> = {
+        items: results.items.map((trip) => this.tripToDto(trip)),
+        meta: results.meta,
+      };
+      return paginatedUserTrips;
+    } catch (error) {
+      this.logger.error('Error Getting Trips', error.message);
+      throw new InternalServerErrorException('Error Getting User Trips');
+    }
+  }
+
   async listPublicTrips() {
     try {
       const trips = await this.repository.find({
