@@ -482,6 +482,8 @@ export class TripService extends BaseService<Trip> {
           status: bk.status,
           seats: bk.seats,
           bookedAt: bk.createdAt,
+          riderName: bk?.riderName,
+          riderPhone: bk?.riderPhone,
         };
       }),
     };
