@@ -16,12 +16,9 @@ import {
   Between,
   DataSource,
   Equal,
-  FindManyOptions,
-  FindOptionsOrderValue,
   FindOptionsWhere,
   In,
   MoreThan,
-  Not,
   Or,
 } from 'typeorm';
 import { TRIP_STATUS } from '../enums/trip-status.enum';
@@ -108,6 +105,7 @@ export class TripService extends BaseService<Trip> {
       };
       const results = await this.findPaged(where, 1, 10, {
         relations: ['bookings', 'driver', 'driver.assignedVehicle'],
+        order: { departureAt: 'DESC' },
       });
       const paginatedUserTrips: Page<TripSearchResultDto> = {
         items: results.items.map((trip) => this.tripToDto(trip)),
