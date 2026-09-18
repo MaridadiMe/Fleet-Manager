@@ -54,6 +54,7 @@ export class TripService extends BaseService<Trip> {
 
   async createTrip(dto: CreateTripDto, user: User) {
     try {
+      this.logger.debug(`Create Trip Request: ${JSON.stringify(dto)}`);
       const tripTime = new Date(dto.departureAt);
 
       const windowStart = new Date(tripTime.getTime() - 30 * 60 * 1000);
@@ -64,6 +65,7 @@ export class TripService extends BaseService<Trip> {
       });
 
       if (!driver) {
+        this.logger.error('Driver not found for the provided user ID');
         throw new NotFoundException(
           'Driver not found for the provided user ID',
         );
@@ -76,6 +78,8 @@ export class TripService extends BaseService<Trip> {
           departureAt: Between(windowStart, windowEnd),
         },
       });
+
+      this.logger.debug(`Conflicting Trip Result: ${JSON.stringify(conflict)}`);
 
       if (conflict) {
         throw new BadRequestException(
