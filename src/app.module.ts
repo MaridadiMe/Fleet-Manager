@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { databaseConnectionOptions } from './core/config/database.config';
 import { AuthModule } from './modules/auth/auth.module';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth-guard';
 import { PermissionsGuard } from './modules/auth/guards/permissions.guard';
 import { VehicleModule } from './modules/vehicle/vehicle.module';
@@ -11,9 +11,11 @@ import { DriverModule } from './modules/driver/driver.module';
 import { OwnerModule } from './modules/owner/owner.module';
 import { TripModule } from './modules/trip/trip.module';
 import { RabbitMqModule } from './modules/rabbitMq/rabbitMq.module';
+import { SentryModule } from '@sentry/nestjs/setup';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
     }),

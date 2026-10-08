@@ -7,11 +7,15 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { SentryExceptionCaptured } from '@sentry/nestjs';
 import { Response } from 'express';
+import * as Sentry from '@sentry/node';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
+
+  @SentryExceptionCaptured()
   catch(exception: any, host: ArgumentsHost) {
     this.logger.error('An error occurred', exception);
     const ctx = host.switchToHttp();
@@ -41,6 +45,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message: errorMessage,
       },
     };
+
+    Sentry.captureMessage(JSON.stringify(errorResponse), 'error');
 
     response.status(status).json(errorResponse);
   }
